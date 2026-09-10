@@ -1,1 +1,997 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Caja iMarket</title>
+<style>
+  :root{
+    --paper: #F2ECDE;
+    --paper-dim: #E8E0CC;
+    --ink: #26221C;
+    --ink-soft: #6B6355;
+    --line: #D9CFB6;
+    --cover: #16332B;
+    --cover-2: #1F4438;
+    --gold: #B5872F;
+    --gold-soft: #E9D9AE;
+    --depto: #A6553D;
+    --imarket-c: #2B6E71;
+    --caballos: #7A5A2A;
+    --otros: #5B4B7E;
+    --neg: #A63D33;
+    --pos: #3E6E4A;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);}
+  body{
+    font-family: 'Iowan Old Style','Georgia',serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:40px;
+  }
+  .amt, .mono{
+    font-family: 'SF Mono','Menlo',monospace;
+    font-variant-numeric: tabular-nums;
+  }
 
+  /* HEADER / COVER */
+  .cover{
+    background: linear-gradient(180deg,var(--cover),var(--cover-2));
+    color: var(--gold-soft);
+    padding: 22px 20px 26px;
+    border-bottom: 3px solid var(--gold);
+  }
+  .cover-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+  }
+  .brand{
+    font-size:13px;
+    letter-spacing:0.03em;
+    color: #C9BE9E;
+  }
+  .date-today{
+    font-size:12px;
+    color:#9FB3A8;
+  }
+  .balance-label{
+    margin-top:14px;
+    font-size:13px;
+    color:#9FB3A8;
+  }
+  .balance-value{
+    font-size:44px;
+    line-height:1.1;
+    margin-top:2px;
+    color:#F7F1DE;
+    font-weight:600;
+    letter-spacing:-0.01em;
+  }
+  .balance-sub{
+    margin-top:8px;
+    font-size:12.5px;
+    color:#A9BDB1;
+    display:flex;
+    gap:14px;
+  }
+  .balance-sub span.up{color:#9FD4AE;}
+  .balance-sub span.down{color:#E3A79A;}
+
+  /* SECTIONS */
+  .section{
+    padding: 18px 20px 6px;
+  }
+  .section-title{
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+    font-style: italic;
+  }
+
+  /* QUICK INCOME ROW */
+  .income-row{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding-bottom:4px;
+  }
+  .income-chip{
+    flex: 0 0 auto;
+    background: var(--paper-dim);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--gold);
+    border-radius: 3px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--ink);
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    min-width: 118px;
+    text-align:left;
+  }
+  .income-chip b{font-size:14px;}
+  .income-chip small{color:var(--ink-soft); font-size:11px;}
+
+  /* FORM CARD */
+  .ledger-card{
+    background: var(--paper-dim);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 16px;
+    margin: 8px 20px 0;
+  }
+  .field-label{
+    font-size:12px;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  .cat-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:8px;
+    margin-bottom:14px;
+  }
+  .cat-btn{
+    border: 1.5px solid var(--line);
+    background: var(--paper);
+    border-radius: 3px;
+    padding: 10px 8px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--ink);
+    text-align:left;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    cursor:pointer;
+  }
+  .cat-dot{
+    width:9px;height:9px;border-radius:50%;flex:0 0 auto;
+  }
+  .cat-btn.active{
+    border-color: var(--ink);
+    background: var(--paper);
+    box-shadow: inset 0 0 0 1px var(--ink);
+  }
+  .row-2{
+    display:flex;
+    gap:10px;
+    margin-bottom:12px;
+  }
+  input[type=number], input[type=text], input[type=date]{
+    width:100%;
+    font-family: inherit;
+    font-size: 15px;
+    padding: 10px 10px;
+    border: 1.5px solid var(--line);
+    border-radius: 3px;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  input:focus{outline:2px solid var(--gold); outline-offset:1px;}
+  .amount-wrap{position:relative; flex: 0 0 130px;}
+  .amount-wrap span{
+    position:absolute; left:12px; top:50%; transform:translateY(-50%);
+    color:var(--ink-soft); font-size:13px;
+    pointer-events:none;
+  }
+  .amount-wrap input{padding-left:44px; font-family:'SF Mono',monospace; font-variant-numeric:tabular-nums;}
+  .note-wrap{flex:1;}
+  .submit-btn{
+    width:100%;
+    background: var(--cover);
+    color: var(--gold-soft);
+    border:none;
+    border-radius:3px;
+    padding:12px;
+    font-family: inherit;
+    font-size:15px;
+    letter-spacing:0.01em;
+    cursor:pointer;
+  }
+  .submit-btn:active{background:var(--cover-2);}
+  .submit-btn:disabled{opacity:0.45;}
+
+  .curr-toggle{
+    display:flex;
+    gap:8px;
+    margin-bottom:12px;
+  }
+  .curr-btn{
+    flex:1;
+    border: 1.5px solid var(--line);
+    background: var(--paper);
+    border-radius: 3px;
+    padding: 8px 6px;
+    font-size: 12.5px;
+    font-family: inherit;
+    color: var(--ink-soft);
+    cursor:pointer;
+  }
+  .curr-btn.active{
+    border-color: var(--ink);
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--ink);
+  }
+  .source-toggle{
+    display:flex;
+    gap:8px;
+    margin: 4px 0 14px;
+  }
+  .source-btn{
+    flex:1;
+    border: 1.5px solid var(--line);
+    background: var(--paper);
+    border-radius: 3px;
+    padding: 9px 8px;
+    font-family: inherit;
+    color: var(--ink-soft);
+    text-align:left;
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    gap:1px;
+  }
+  .source-btn b{font-size:12.5px; color:inherit;}
+  .source-btn small{font-size:10.5px; color:inherit; opacity:0.8;}
+  .source-btn.active{
+    border-color: var(--ink);
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--ink);
+  }
+  .conversion-readout{
+    background: var(--paper);
+    border: 1px dashed var(--line);
+    border-radius: 3px;
+    padding: 8px 10px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .conversion-readout b{
+    color: var(--ink);
+    font-family: 'SF Mono','Menlo',monospace;
+    font-variant-numeric: tabular-nums;
+    white-space:nowrap;
+  }
+
+  /* HISTORY */
+  .day-group{margin: 18px 0 0;}
+  .day-heading{
+    font-size:12px;
+    color:var(--ink-soft);
+    padding: 0 20px 8px;
+    display:flex;
+    justify-content:space-between;
+    border-bottom: 1px solid var(--line);
+    margin: 0 20px;
+  }
+  .move{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    padding:10px 20px;
+    border-bottom: 1px solid var(--paper-dim);
+  }
+  .move-cat-tag{
+    flex:0 0 auto;
+    width:8px;height:8px;border-radius:50%;
+    margin-top:6px;
+  }
+  .move-body{flex:1; min-width:0;}
+  .move-note{font-size:14px; color:var(--ink); word-wrap:break-word;}
+  .move-meta{font-size:11.5px; color:var(--ink-soft); margin-top:2px;}
+  .move-amt-wrap{
+    flex: 0 0 auto;
+    min-width: 76px;
+  }
+  .move-amt{
+    display:block;
+    font-size:14.5px;
+    text-align:right;
+    white-space:nowrap;
+  }
+  .move-amt.neg{color:var(--neg);}
+  .move-amt.pos{color:var(--pos);}
+  .move-running{
+    font-size:10.5px;
+    color:var(--ink-soft);
+    display:block;
+    text-align:right;
+    white-space:nowrap;
+    margin-top:1px;
+  }
+
+  /* MONTHLY SUMMARY */
+  .summary-card{
+    background: var(--paper-dim);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 16px;
+    margin: 8px 20px 0;
+  }
+  .summary-totals{
+    display:flex;
+    gap:10px;
+    margin-bottom: 14px;
+  }
+  .summary-box{
+    flex:1;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 10px 12px;
+    min-width:0;
+  }
+  .summary-box-label{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    margin-bottom:4px;
+  }
+  .summary-box-value{
+    font-size:19px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .summary-box-value.pos{color:var(--pos);}
+  .summary-box-value.neg{color:var(--neg);}
+  .cat-breakdown-row{
+    cursor:pointer;
+  }
+  .cat-breakdown-head{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .cat-breakdown-row:last-child .cat-breakdown-head{border-bottom:none;}
+  .cat-breakdown-name{
+    flex:1;
+    font-size:13.5px;
+    min-width:0;
+  }
+  .cat-breakdown-amt{
+    flex:0 0 auto;
+    font-size:13.5px;
+    white-space:nowrap;
+    color: var(--neg);
+  }
+  .cat-breakdown-caret{
+    flex:0 0 auto;
+    font-size:11px;
+    color:var(--ink-soft);
+    width:12px;
+    text-align:center;
+    transition: transform 0.15s ease;
+  }
+  .cat-breakdown-caret.open{transform:rotate(90deg);}
+  .cat-breakdown-detail{
+    display:none;
+    padding: 2px 0 10px 17px;
+  }
+  .cat-breakdown-detail.open{display:block;}
+  .cat-detail-item{
+    display:flex;
+    gap:8px;
+    padding: 5px 0;
+    font-size:12.5px;
+  }
+  .cat-detail-note{flex:1; min-width:0; color:var(--ink); word-break:break-word;}
+  .cat-detail-date{flex:0 0 auto; color:var(--ink-soft); font-size:11px; white-space:nowrap;}
+  .cat-detail-amt{flex:0 0 auto; color:var(--neg); white-space:nowrap; min-width:56px; text-align:right;}
+  .cat-breakdown-empty{
+    font-size:13px; color:var(--ink-soft); font-style:italic; padding:8px 0;
+  }
+  .empty-state{
+    padding: 30px 20px;
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:14px;
+    font-style:italic;
+  }
+  .delete-x{
+    flex:0 0 auto;
+    color:var(--ink-soft);
+    font-size:16px;
+    padding:0 2px;
+    cursor:pointer;
+    line-height:1;
+    margin-top:2px;
+  }
+
+  .toast{
+    position:fixed;
+    bottom:18px;
+    left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background: var(--cover);
+    color: var(--gold-soft);
+    padding: 10px 18px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: inherit;
+    opacity:0;
+    transition: all 0.25s ease;
+    pointer-events:none;
+    white-space:nowrap;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(22,51,43,0.5);
+    display:none; align-items:flex-end; justify-content:center; z-index:10;
+  }
+  .modal-backdrop.show{display:flex;}
+  .modal{
+    background: var(--paper);
+    width:100%;
+    max-width:480px;
+    border-radius: 10px 10px 0 0;
+    padding: 20px 20px 28px;
+  }
+  .modal h3{margin:0 0 4px; font-size:16px;}
+  .modal p{margin:0 0 14px; font-size:13px; color:var(--ink-soft);}
+  .modal-actions{display:flex; gap:10px; margin-top:16px;}
+  .modal-actions button{
+    flex:1; padding:11px; border-radius:3px; font-family:inherit; font-size:14px; cursor:pointer;
+  }
+  .btn-cancel{background:var(--paper-dim); border:1px solid var(--line); color:var(--ink);}
+  .btn-confirm{background:var(--cover); border:none; color:var(--gold-soft);}
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="cover-top">
+    <div class="brand">CAJA — iMarket</div>
+    <div class="date-today" id="todayLabel"></div>
+  </div>
+  <div class="balance-label">Saldo actual</div>
+  <div class="balance-value"><span class="amt" id="balanceValue">USD 0</span></div>
+  <div class="balance-sub">
+    <span class="up" id="sumIn">+0 este mes</span>
+    <span class="down" id="sumOut">−0 este mes</span>
+  </div>
+</div>
+
+<div class="summary-card">
+  <div class="field-label">Resumen del mes</div>
+  <div class="summary-totals">
+    <div class="summary-box">
+      <div class="summary-box-label">Ganado</div>
+      <div class="summary-box-value pos amt" id="monthIn">USD 0</div>
+    </div>
+    <div class="summary-box">
+      <div class="summary-box-label">Gastado</div>
+      <div class="summary-box-value neg amt" id="monthOut">USD 0</div>
+    </div>
+  </div>
+  <div id="catBreakdown"></div>
+</div>
+
+<div class="section">
+  <div class="section-title">Sumar ingreso</div>
+  <div class="income-row">
+    <button class="income-chip" data-income="ganancia">
+      <b>+ Ganancia semanal</b>
+      <small>viernes, monto variable</small>
+    </button>
+    <button class="income-chip" data-income="interes">
+      <b>+ Interés mensual</b>
+      <small>principio de mes</small>
+    </button>
+    <button class="income-chip" data-income="deposito">
+      <b>+ Depósito extra</b>
+      <small>plata propia a la caja</small>
+    </button>
+    <button class="income-chip" data-income="saldo_inicial">
+      <b>+ Saldo inicial</b>
+      <small>punto de partida</small>
+    </button>
+  </div>
+</div>
+
+<div class="ledger-card">
+  <div class="field-label">Registrar movimiento</div>
+  <div class="cat-grid" id="catGrid">
+    <button class="cat-btn" data-cat="depto"><span class="cat-dot" style="background:var(--depto)"></span>Depto (alquiler, luz, gas)</button>
+    <button class="cat-btn" data-cat="imarket"><span class="cat-dot" style="background:var(--imarket-c)"></span>iMarket (gastos del negocio)</button>
+    <button class="cat-btn" data-cat="caballos"><span class="cat-dot" style="background:var(--caballos)"></span>Caballos (petisero, veterinaria...)</button>
+    <button class="cat-btn" data-cat="otros"><span class="cat-dot" style="background:var(--otros)"></span>Otros</button>
+  </div>
+  <div class="curr-toggle" id="currToggle">
+    <button class="curr-btn active" data-curr="usd">USD</button>
+    <button class="curr-btn" data-curr="ars">ARS (pesos)</button>
+  </div>
+  <div class="row-2" id="usdRow">
+    <div class="amount-wrap" style="flex:1;">
+      <span>usd</span>
+      <input type="number" id="amountInput" placeholder="0" inputmode="decimal">
+    </div>
+  </div>
+  <div class="row-2" id="pesosRow" style="display:none;">
+    <div class="amount-wrap" style="flex:1;">
+      <span>$</span>
+      <input type="number" id="pesosInput" placeholder="0" inputmode="decimal">
+    </div>
+    <div class="amount-wrap" style="flex:1;">
+      <span>cotiz.</span>
+      <input type="number" id="rateInput" placeholder="0" inputmode="decimal">
+    </div>
+  </div>
+  <div class="conversion-readout" id="conversionReadout" style="display:none;"></div>
+  <div class="row-2">
+    <div class="note-wrap">
+      <input type="text" id="noteInput" placeholder="Aclaración (ej: transferencia Petisero)">
+    </div>
+  </div>
+  <div class="row-2">
+    <div class="note-wrap">
+      <div class="field-label" style="margin-bottom:4px;">Fecha (por defecto, hoy)</div>
+      <input type="date" id="expenseDateInput">
+    </div>
+  </div>
+  <div class="source-toggle" id="sourceToggle">
+    <button class="source-btn active" data-source="caja">
+      <b>Salió de la caja</b>
+      <small>resta del saldo de iMarket</small>
+    </button>
+    <button class="source-btn" data-source="externa">
+      <b>Plata aparte</b>
+      <small>solo anotar, no resta el saldo</small>
+    </button>
+  </div>
+  <button class="submit-btn" id="submitBtn" disabled>Restar de la caja</button>
+</div>
+
+<div id="historyContainer"></div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <h3 id="modalTitle">Ganancia semanal</h3>
+    <p id="modalSubtitle">Ingresá el monto que suma a la caja.</p>
+    <div class="amount-wrap" style="flex:1;">
+      <span>usd</span>
+      <input type="number" id="modalAmount" placeholder="0" inputmode="decimal">
+    </div>
+    <div class="field-label" style="margin-top:12px;">Fecha</div>
+    <input type="date" id="modalDate">
+    <div class="modal-actions">
+      <button class="btn-cancel" id="modalCancel">Cancelar</button>
+      <button class="btn-confirm" id="modalConfirm">Sumar a la caja</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CATS = {
+  depto:    { label: "Depto",    color: "var(--depto)" },
+  imarket:  { label: "iMarket",  color: "var(--imarket-c)" },
+  caballos: { label: "Caballos", color: "var(--caballos)" },
+  otros:    { label: "Otros",    color: "var(--otros)" },
+  ingreso:  { label: "Ingreso",  color: "var(--gold)" },
+  ninguna:  { label: "Sin categoría", color: "var(--ink-soft)" }
+};
+
+const INCOME_LABELS = {
+  ganancia: "Ganancia semanal",
+  interes: "Interés mensual",
+  deposito: "Depósito extra",
+  saldo_inicial: "Saldo inicial"
+};
+
+let state = { balance: 0, movements: [], lastRate: null };
+let selectedCat = null;
+let pendingIncomeType = null;
+let currMode = 'usd';
+let sourceMode = 'caja';
+
+const el = (id) => document.getElementById(id);
+
+function todayLabel(){
+  const d = new Date();
+  const opts = { weekday:'long', day:'numeric', month:'long' };
+  let s = d.toLocaleDateString('es-AR', opts);
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function fmt(n){
+  const sign = n < 0 ? "-" : "";
+  const abs = Math.abs(n);
+  return sign + abs.toLocaleString('es-AR', {maximumFractionDigits:2});
+}
+
+function fmtTime(ts){
+  const d = new Date(ts);
+  return d.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'});
+}
+
+function dayKey(ts){
+  const d = new Date(ts);
+  return d.toLocaleDateString('es-AR', {day:'2-digit', month:'2-digit', year:'2-digit'});
+}
+
+function showToast(msg){
+  const t = el('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 1800);
+}
+
+async function loadState(){
+  try{
+    const raw = localStorage.getItem('ledger-data');
+    if(raw){
+      state = JSON.parse(raw);
+      if(state.lastRate === undefined) state.lastRate = null;
+    }
+  }catch(e){
+    // no existing data yet
+  }
+  if(state.lastRate) el('rateInput').value = state.lastRate;
+  render();
+}
+
+async function saveState(){
+  try{
+    localStorage.setItem('ledger-data', JSON.stringify(state));
+  }catch(e){
+    showToast('No se pudo guardar. Reintentá.');
+  }
+}
+
+function addMovement(type, category, amount, note, meta){
+  const mov = {
+    id: Date.now() + '-' + Math.random().toString(36).slice(2,7),
+    ts: (meta && meta.ts) ? meta.ts : Date.now(),
+    type,          // 'ingreso' | 'gasto'
+    category,      // key from CATS
+    amount: Math.abs(amount),
+    note: note || "",
+    affectsBalance: (meta && meta.affectsBalance === false) ? false : true
+  };
+  if(meta && meta.pesos && meta.rate){
+    mov.pesos = meta.pesos;
+    mov.rate = meta.rate;
+  }
+  state.movements.unshift(mov);
+  if(mov.affectsBalance){
+    state.balance += (type === 'ingreso' ? mov.amount : -mov.amount);
+  }
+  saveState();
+  render();
+}
+
+function deleteMovement(id){
+  const idx = state.movements.findIndex(m => m.id === id);
+  if(idx === -1) return;
+  const mov = state.movements[idx];
+  if(mov.affectsBalance !== false){
+    state.balance -= (mov.type === 'ingreso' ? mov.amount : -mov.amount);
+  }
+  state.movements.splice(idx,1);
+  saveState();
+  render();
+}
+
+function render(){
+  el('balanceValue').textContent = 'USD ' + fmt(state.balance);
+
+  const now = new Date();
+  const curMonth = now.getMonth(), curYear = now.getFullYear();
+  let sumIn = 0, sumOut = 0;
+  state.movements.forEach(m=>{
+    const d = new Date(m.ts);
+    if(d.getMonth() === curMonth && d.getFullYear() === curYear){
+      if(m.type === 'ingreso') sumIn += m.amount; else sumOut += m.amount;
+    }
+  });
+  el('sumIn').textContent = '+' + fmt(sumIn) + ' este mes';
+  el('sumOut').textContent = '−' + fmt(sumOut) + ' este mes';
+  el('monthIn').textContent = 'USD ' + fmt(sumIn);
+  el('monthOut').textContent = 'USD ' + fmt(sumOut);
+
+  renderCatBreakdown(curMonth, curYear);
+
+  const container = el('historyContainer');
+  if(state.movements.length === 0){
+    container.innerHTML = '<div class="empty-state">Todavía no cargaste movimientos.<br>Empezá sumando o restando de la caja.</div>';
+    return;
+  }
+
+  // group by day, running balance from the end backwards
+  const sorted = [...state.movements].sort((a,b)=> a.ts - b.ts);
+  let running = 0;
+  const runningById = {};
+  sorted.forEach(m=>{
+    if(m.affectsBalance !== false){
+      running += (m.type === 'ingreso' ? m.amount : -m.amount);
+    }
+    runningById[m.id] = running;
+  });
+
+  const groups = {};
+  const order = [];
+  state.movements.forEach(m=>{
+    const k = dayKey(m.ts);
+    if(!groups[k]){ groups[k] = []; order.push(k); }
+    groups[k].push(m);
+  });
+
+  let html = '';
+  order.forEach(k=>{
+    html += `<div class="day-group"><div class="day-heading"><span>${k}</span></div>`;
+    groups[k].forEach(m=>{
+      const cat = CATS[m.category] || CATS.otros;
+      const isIncome = m.type === 'ingreso';
+      html += `
+        <div class="move">
+          <div class="move-cat-tag" style="background:${cat.color}"></div>
+          <div class="move-body">
+            <div class="move-note">${m.note ? escapeHtml(m.note) : cat.label}</div>
+            <div class="move-meta">${fmtTime(m.ts)} · ${cat.label}${m.pesos ? ' · $' + fmt(m.pesos) + ' a ' + fmt(m.rate) : ''}${m.affectsBalance === false ? ' · fuera de la caja' : ''}</div>
+          </div>
+          <div class="move-amt-wrap">
+            <span class="move-amt ${isIncome ? 'pos' : 'neg'} amt">${isIncome ? '+' : '−'}${fmt(m.amount)}</span>
+            <span class="move-running amt">saldo ${fmt(runningById[m.id])}</span>
+          </div>
+          <div class="delete-x" data-del="${m.id}">✕</div>
+        </div>`;
+    });
+    html += `</div>`;
+  });
+  container.innerHTML = html;
+
+  container.querySelectorAll('[data-del]').forEach(elx=>{
+    elx.addEventListener('click', ()=>{
+      confirmDelete(elx.getAttribute('data-del'));
+    });
+  });
+}
+
+const openCats = new Set();
+
+function renderCatBreakdown(curMonth, curYear){
+  const cats = ['depto','imarket','caballos','otros'];
+  const byCat = {};
+  cats.forEach(c => byCat[c] = { total: 0, items: [] });
+
+  state.movements.forEach(m=>{
+    if(m.type !== 'gasto') return;
+    const d = new Date(m.ts);
+    if(d.getMonth() !== curMonth || d.getFullYear() !== curYear) return;
+    const key = byCat[m.category] ? m.category : 'otros';
+    byCat[key].total += m.amount;
+    byCat[key].items.push(m);
+  });
+
+  const wrap = el('catBreakdown');
+  const anyExpense = cats.some(c => byCat[c].items.length > 0);
+  if(!anyExpense){
+    wrap.innerHTML = '<div class="cat-breakdown-empty">Sin gastos cargados este mes.</div>';
+    return;
+  }
+
+  let html = '';
+  cats.forEach(c=>{
+    const info = byCat[c];
+    if(info.items.length === 0) return;
+    const cat = CATS[c];
+    const isOpen = openCats.has(c);
+    html += `
+      <div class="cat-breakdown-row" data-catrow="${c}">
+        <div class="cat-breakdown-head">
+          <span class="cat-dot" style="background:${cat.color}"></span>
+          <span class="cat-breakdown-name">${cat.label}</span>
+          <span class="cat-breakdown-amt amt">−${fmt(info.total)}</span>
+          <span class="cat-breakdown-caret ${isOpen ? 'open' : ''}">›</span>
+        </div>
+        <div class="cat-breakdown-detail ${isOpen ? 'open' : ''}">
+          ${info.items
+            .sort((a,b)=> b.ts - a.ts)
+            .map(m => `
+              <div class="cat-detail-item">
+                <span class="cat-detail-note">${m.note ? escapeHtml(m.note) : cat.label}</span>
+                <span class="cat-detail-date">${dayKey(m.ts)}</span>
+                <span class="cat-detail-amt amt">−${fmt(m.amount)}</span>
+              </div>`).join('')}
+        </div>
+      </div>`;
+  });
+  wrap.innerHTML = html;
+
+  wrap.querySelectorAll('[data-catrow]').forEach(rowEl=>{
+    rowEl.querySelector('.cat-breakdown-head').addEventListener('click', ()=>{
+      const key = rowEl.getAttribute('data-catrow');
+      if(openCats.has(key)) openCats.delete(key); else openCats.add(key);
+      rowEl.querySelector('.cat-breakdown-caret').classList.toggle('open');
+      rowEl.querySelector('.cat-breakdown-detail').classList.toggle('open');
+    });
+  });
+}
+
+function escapeHtml(s){
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+// ---- expense form ----
+document.querySelectorAll('.cat-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedCat = btn.getAttribute('data-cat');
+    updateSubmitState();
+  });
+});
+
+document.querySelectorAll('.curr-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.curr-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currMode = btn.getAttribute('data-curr');
+    el('usdRow').style.display = currMode === 'usd' ? 'flex' : 'none';
+    el('pesosRow').style.display = currMode === 'ars' ? 'flex' : 'none';
+    updateConversion();
+    updateSubmitState();
+  });
+});
+
+document.querySelectorAll('.source-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.source-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    sourceMode = btn.getAttribute('data-source');
+    el('submitBtn').textContent = sourceMode === 'caja' ? 'Restar de la caja' : 'Solo registrar el gasto';
+    updateSubmitState();
+  });
+});
+
+function getComputedUsd(){
+  if(currMode === 'usd'){
+    return parseFloat(el('amountInput').value) || 0;
+  }
+  const pesos = parseFloat(el('pesosInput').value) || 0;
+  const rate = parseFloat(el('rateInput').value) || 0;
+  if(pesos <= 0 || rate <= 0) return 0;
+  return pesos / rate;
+}
+
+function updateConversion(){
+  const readout = el('conversionReadout');
+  if(currMode !== 'ars'){
+    readout.style.display = 'none';
+    return;
+  }
+  const usd = getComputedUsd();
+  if(usd > 0){
+    readout.style.display = 'flex';
+    readout.innerHTML = `<span>Equivale a</span><b class="amt">USD ${fmt(usd)}</b>`;
+  } else {
+    readout.style.display = 'none';
+  }
+}
+
+el('pesosInput').addEventListener('input', ()=>{ updateConversion(); updateSubmitState(); });
+el('rateInput').addEventListener('input', ()=>{ updateConversion(); updateSubmitState(); });
+
+function updateSubmitState(){
+  const usd = getComputedUsd();
+  const catOk = selectedCat || sourceMode === 'externa';
+  el('submitBtn').disabled = !(catOk && usd > 0);
+}
+el('amountInput').addEventListener('input', updateSubmitState);
+
+el('submitBtn').addEventListener('click', ()=>{
+  const usd = getComputedUsd();
+  const catOk = selectedCat || sourceMode === 'externa';
+  if(!catOk || !(usd > 0)) return;
+  const category = selectedCat || 'ninguna';
+  const note = el('noteInput').value.trim();
+
+  const dateVal = el('expenseDateInput').value;
+  let ts = Date.now();
+  if(dateVal){
+    const chosen = new Date(dateVal + 'T12:00:00');
+    const today = new Date();
+    const isToday = chosen.toDateString() === today.toDateString();
+    ts = isToday ? Date.now() : chosen.getTime();
+  }
+
+  if(currMode === 'ars'){
+    const pesos = parseFloat(el('pesosInput').value);
+    const rate = parseFloat(el('rateInput').value);
+    state.lastRate = rate;
+    addMovement('gasto', category, usd, note, { pesos, rate, ts, affectsBalance: sourceMode === 'caja' });
+    el('pesosInput').value = '';
+  } else {
+    addMovement('gasto', category, usd, note, { ts, affectsBalance: sourceMode === 'caja' });
+  }
+
+  el('amountInput').value = '';
+  el('noteInput').value = '';
+  el('expenseDateInput').value = todayISO();
+  el('conversionReadout').style.display = 'none';
+  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+  selectedCat = null;
+  document.querySelectorAll('.source-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('.source-btn[data-source="caja"]').classList.add('active');
+  sourceMode = 'caja';
+  el('submitBtn').textContent = 'Restar de la caja';
+  updateSubmitState();
+  showToast('Movimiento registrado');
+});
+
+function todayISO(){
+  const d = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
+// ---- income modal ----
+document.querySelectorAll('[data-income]').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    pendingIncomeType = chip.getAttribute('data-income');
+    el('modalTitle').textContent = INCOME_LABELS[pendingIncomeType];
+    el('modalDate').value = todayISO();
+    if(pendingIncomeType === 'interes'){
+      el('modalSubtitle').textContent = 'Se carga a principio de mes.';
+      el('modalAmount').value = '';
+    } else if(pendingIncomeType === 'ganancia'){
+      el('modalSubtitle').textContent = 'La ganancia de la semana (normalmente los viernes).';
+      el('modalAmount').value = '';
+    } else if(pendingIncomeType === 'saldo_inicial'){
+      el('modalSubtitle').textContent = 'El monto que tenías en la caja en esa fecha, para arrancar a registrar desde ahí.';
+      el('modalAmount').value = '';
+    } else {
+      el('modalSubtitle').textContent = 'Plata propia que sumás a la caja de iMarket.';
+      el('modalAmount').value = '';
+    }
+    el('modalBackdrop').classList.add('show');
+    el('modalAmount').focus();
+  });
+});
+
+el('modalCancel').addEventListener('click', ()=>{
+  el('modalBackdrop').classList.remove('show');
+});
+
+el('modalConfirm').addEventListener('click', ()=>{
+  const amt = parseFloat(el('modalAmount').value);
+  if(!(amt > 0)) return;
+  const dateVal = el('modalDate').value;
+  let ts = Date.now();
+  if(dateVal){
+    const chosen = new Date(dateVal + 'T12:00:00');
+    const today = new Date();
+    const isToday = chosen.toDateString() === today.toDateString();
+    ts = isToday ? Date.now() : chosen.getTime();
+  }
+  addMovement('ingreso', 'ingreso', amt, INCOME_LABELS[pendingIncomeType], { ts });
+  el('modalBackdrop').classList.remove('show');
+  showToast('Ingreso sumado a la caja');
+});
+
+let pendingDeleteId = null;
+function confirmDelete(id){
+  if(confirm('¿Eliminar este movimiento?')){
+    deleteMovement(id);
+  }
+}
+
+el('todayLabel').textContent = todayLabel();
+el('expenseDateInput').value = todayISO();
+loadState();
+</script>
+</body>
+</html>
