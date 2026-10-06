@@ -315,6 +315,74 @@
     padding: 16px;
     margin: 8px 20px 0;
   }
+  .backup-card{
+    background: var(--paper-dim);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 16px;
+    margin: 28px 20px 0;
+  }
+  .backup-text{
+    font-size:12.5px;
+    color: var(--ink-soft);
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+  .backup-actions{
+    display:flex;
+    gap:8px;
+  }
+  .backup-btn{
+    flex:1;
+    border: 1.5px solid var(--line);
+    background: var(--paper);
+    border-radius: 3px;
+    padding: 10px 6px;
+    font-family: inherit;
+    font-size: 13.5px;
+    color: var(--ink);
+    cursor:pointer;
+  }
+  .month-nav{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:12px;
+  }
+  .month-arrow{
+    flex:0 0 40px;
+    height:40px;
+    border: 1.5px solid var(--line);
+    background: var(--paper);
+    border-radius: 3px;
+    font-family: inherit;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--ink);
+    cursor:pointer;
+  }
+  .month-arrow:disabled{opacity:0.3; cursor:default;}
+  .month-label{
+    flex:1;
+    text-align:center;
+    font-size:16px;
+    color: var(--ink);
+    text-transform: capitalize;
+  }
+  .month-today{
+    display:block;
+    width:100%;
+    margin: -4px 0 12px;
+    padding: 8px;
+    border: 1px dashed var(--line);
+    background: transparent;
+    border-radius: 3px;
+    font-family: inherit;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    cursor:pointer;
+  }
   .summary-totals{
     display:flex;
     gap:10px;
@@ -462,7 +530,12 @@
 </div>
 
 <div class="summary-card">
-  <div class="field-label">Resumen del mes</div>
+  <div class="month-nav">
+    <button class="month-arrow" id="monthPrev" aria-label="Mes anterior">‹</button>
+    <div class="month-label" id="monthLabel">Mes</div>
+    <button class="month-arrow" id="monthNext" aria-label="Mes siguiente">›</button>
+  </div>
+  <button class="month-today" id="monthToday" style="display:none;">Volver al mes actual</button>
   <div class="summary-totals">
     <div class="summary-box">
       <div class="summary-box-label">Ganado</div>
@@ -553,6 +626,16 @@
 
 <div id="historyContainer"></div>
 
+<div class="backup-card">
+  <div class="field-label">Copia de seguridad</div>
+  <div class="backup-text">Guardá una copia en tu celular de vez en cuando (por ejemplo, cada viernes). Si algún día se borran los datos, la restaurás desde acá.</div>
+  <div class="backup-actions">
+    <button class="backup-btn" id="backupExport">Guardar copia</button>
+    <button class="backup-btn" id="backupImport">Restaurar copia</button>
+  </div>
+  <input type="file" id="backupFile" accept=".json,application/json" style="display:none;">
+</div>
+
 <div class="toast" id="toast"></div>
 
 <div class="modal-backdrop" id="modalBackdrop">
@@ -594,6 +677,9 @@ let selectedCat = null;
 let pendingIncomeType = null;
 let currMode = 'usd';
 let sourceMode = 'caja';
+const _nowInit = new Date();
+let viewMonth = _nowInit.getMonth();
+let viewYear = _nowInit.getFullYear();
 
 const el = (id) => document.getElementById(id);
 
@@ -688,19 +774,34 @@ function render(){
 
   const now = new Date();
   const curMonth = now.getMonth(), curYear = now.getFullYear();
+
+  // Header quick glance: always the current calendar month
+  let curIn = 0, curOut = 0;
+  // Summary card: the month being viewed
   let sumIn = 0, sumOut = 0;
   state.movements.forEach(m=>{
     const d = new Date(m.ts);
-    if(d.getMonth() === curMonth && d.getFullYear() === curYear){
+    const mm = d.getMonth(), yy = d.getFullYear();
+    if(mm === curMonth && yy === curYear){
+      if(m.type === 'ingreso') curIn += m.amount; else curOut += m.amount;
+    }
+    if(mm === viewMonth && yy === viewYear){
       if(m.type === 'ingreso') sumIn += m.amount; else sumOut += m.amount;
     }
   });
-  el('sumIn').textContent = '+' + fmt(sumIn) + ' este mes';
-  el('sumOut').textContent = '−' + fmt(sumOut) + ' este mes';
+  el('sumIn').textContent = '+' + fmt(curIn) + ' este mes';
+  el('sumOut').textContent = '−' + fmt(curOut) + ' este mes';
   el('monthIn').textContent = 'USD ' + fmt(sumIn);
   el('monthOut').textContent = 'USD ' + fmt(sumOut);
 
-  renderCatBreakdown(curMonth, curYear);
+  // Month navigator
+  const isCurrentView = (viewMonth === curMonth && viewYear === curYear);
+  const labelDate = new Date(viewYear, viewMonth, 1);
+  el('monthLabel').textContent = labelDate.toLocaleDateString('es-AR', { month:'long', year:'numeric' });
+  el('monthNext').disabled = isCurrentView;
+  el('monthToday').style.display = isCurrentView ? 'none' : 'block';
+
+  renderCatBreakdown(viewMonth, viewYear);
 
   const container = el('historyContainer');
   if(state.movements.length === 0){
@@ -722,10 +823,17 @@ function render(){
   const groups = {};
   const order = [];
   state.movements.forEach(m=>{
+    const d = new Date(m.ts);
+    if(d.getMonth() !== viewMonth || d.getFullYear() !== viewYear) return;
     const k = dayKey(m.ts);
     if(!groups[k]){ groups[k] = []; order.push(k); }
     groups[k].push(m);
   });
+
+  if(order.length === 0){
+    container.innerHTML = '<div class="empty-state">Sin movimientos en este mes.</div>';
+    return;
+  }
 
   let html = '';
   order.forEach(k=>{
@@ -758,10 +866,87 @@ function render(){
   });
 }
 
+// ---- backup / restore ----
+el('backupExport').addEventListener('click', ()=>{
+  try{
+    const payload = JSON.stringify({ app: 'caja-imarket', exportedAt: new Date().toISOString(), data: state }, null, 2);
+    const blob = new Blob([payload], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const d = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    a.href = url;
+    a.download = `caja-imarket-copia-${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(()=> URL.revokeObjectURL(url), 2000);
+    showToast('Copia generada');
+  }catch(e){
+    showToast('No se pudo generar la copia');
+  }
+});
+
+el('backupImport').addEventListener('click', ()=>{
+  el('backupFile').click();
+});
+
+el('backupFile').addEventListener('change', (ev)=>{
+  const file = ev.target.files && ev.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const parsed = JSON.parse(reader.result);
+      const incoming = parsed && parsed.data ? parsed.data : parsed;
+      if(!incoming || !Array.isArray(incoming.movements)){
+        showToast('Ese archivo no es una copia válida');
+        return;
+      }
+      const n = incoming.movements.length;
+      if(!confirm(`Esto reemplaza lo que hay ahora por la copia (${n} movimientos). ¿Continuar?`)) return;
+      state = {
+        balance: typeof incoming.balance === 'number'
+          ? incoming.balance
+          : incoming.movements.reduce((acc,m)=> m.affectsBalance === false ? acc : acc + (m.type === 'ingreso' ? m.amount : -m.amount), 0),
+        movements: incoming.movements,
+        lastRate: incoming.lastRate || null
+      };
+      saveState();
+      if(state.lastRate) el('rateInput').value = state.lastRate;
+      render();
+      showToast('Copia restaurada');
+    }catch(e){
+      showToast('No se pudo leer el archivo');
+    }
+  };
+  reader.readAsText(file);
+  ev.target.value = '';
+});
+
+el('monthPrev').addEventListener('click', ()=>{
+  viewMonth--;
+  if(viewMonth < 0){ viewMonth = 11; viewYear--; }
+  render();
+});
+el('monthNext').addEventListener('click', ()=>{
+  const now = new Date();
+  if(viewYear === now.getFullYear() && viewMonth === now.getMonth()) return;
+  viewMonth++;
+  if(viewMonth > 11){ viewMonth = 0; viewYear++; }
+  render();
+});
+el('monthToday').addEventListener('click', ()=>{
+  const now = new Date();
+  viewMonth = now.getMonth();
+  viewYear = now.getFullYear();
+  render();
+});
+
 const openCats = new Set();
 
 function renderCatBreakdown(curMonth, curYear){
-  const cats = ['depto','imarket','caballos','otros'];
+  const cats = ['depto','imarket','caballos','otros','ninguna'];
   const byCat = {};
   cats.forEach(c => byCat[c] = { total: 0, items: [] });
 
@@ -777,7 +962,7 @@ function renderCatBreakdown(curMonth, curYear){
   const wrap = el('catBreakdown');
   const anyExpense = cats.some(c => byCat[c].items.length > 0);
   if(!anyExpense){
-    wrap.innerHTML = '<div class="cat-breakdown-empty">Sin gastos cargados este mes.</div>';
+    wrap.innerHTML = '<div class="cat-breakdown-empty">Sin gastos cargados en este mes.</div>';
     return;
   }
 
